@@ -1,0 +1,12 @@
+[package]
+name = "heic-decoder"
+description = "Platform-independent HEIC/HEIF decoder core (bytes in, sRGB RGBA8 out) on top of libheif"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+rust-version.workspace = true
+links = "heif"
+
+[dependencies]
+moxcms = "0.9"

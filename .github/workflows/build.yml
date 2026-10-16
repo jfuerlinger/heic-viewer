@@ -1,0 +1,167 @@
+name: Build
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  CARGO_TERM_COLOR: always
+  VCPKG_TRIPLET: x64-windows-staticcrt
+  HEIF_LIB_DIR: ${{ github.workspace }}\vcpkg_installed\x64-windows-staticcrt\lib
+  HEIF_BIN_DIR: ${{ github.workspace }}\vcpkg_installed\x64-windows-staticcrt\bin
+
+jobs:
+  build:
+    name: Build, test and package (Windows x64)
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Read vcpkg baseline
+        id: vcpkg
+        shell: pwsh
+        run: |
+          $baseline = (Get-Content vcpkg.json -Raw | ConvertFrom-Json).'builtin-baseline'
+          "baseline=$baseline" >> $env:GITHUB_OUTPUT
+          "root=$env:RUNNER_TEMP\vcpkg" >> $env:GITHUB_OUTPUT
+
+      - name: Cache vcpkg binary packages
+        uses: actions/cache@v4
+        with:
+          path: vcpkg-binary-cache
+          key: vcpkg-${{ env.VCPKG_TRIPLET }}-${{ steps.vcpkg.outputs.baseline }}-${{ hashFiles('vcpkg.json', 'triplets/**') }}
+
+      # Pinned vcpkg checkout (instead of the runner's preinstalled one) so the baseline commit
+      # in vcpkg.json is guaranteed to exist. Runs before the VS dev shell, which sets VCPKG_ROOT.
+      - name: Build libheif + libde265 (vcpkg)
+        shell: pwsh
+        env:
+          VCPKG_BINARY_SOURCES: clear;files,${{ github.workspace }}\vcpkg-binary-cache,readwrite
+        run: |
+          $root = "${{ steps.vcpkg.outputs.root }}"
+          git clone --quiet https://github.com/microsoft/vcpkg.git $root
+          git -C $root checkout --quiet "${{ steps.vcpkg.outputs.baseline }}"
+          & "$root\bootstrap-vcpkg.bat" -disableMetrics
+          New-Item -ItemType Directory -Force vcpkg-binary-cache | Out-Null
+          & "$root\vcpkg.exe" install --vcpkg-root="$root" --triplet $env:VCPKG_TRIPLET --overlay-triplets=triplets --x-install-root=vcpkg_installed
+          if ($LASTEXITCODE -ne 0) { throw "vcpkg install failed" }
+          Get-ChildItem "vcpkg_installed\$env:VCPKG_TRIPLET\bin", "vcpkg_installed\$env:VCPKG_TRIPLET\lib" | Format-Table Name, Length
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy, rustfmt
+
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Lint
+        shell: pwsh
+        run: |
+          cargo fmt --all -- --check
+          if ($LASTEXITCODE -ne 0) { throw "cargo fmt" }
+          cargo clippy --workspace --all-targets -- -D warnings
+          if ($LASTEXITCODE -ne 0) { throw "cargo clippy" }
+
+      - name: Unit and integration tests
+        shell: pwsh
+        run: |
+          $env:PATH = "$env:HEIF_BIN_DIR;$env:PATH"
+          cargo test --workspace --release -- --nocapture
+          if ($LASTEXITCODE -ne 0) { throw "cargo test" }
+
+      - name: Build release binaries
+        run: cargo build --release -p heic-thumbnail -p thumbnail-probe
+
+      - name: Set up MSVC developer shell (dumpbin)
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: x64
+
+      - name: Stage dist
+        shell: pwsh
+        run: ./scripts/stage-dist.ps1 -Triplet $env:VCPKG_TRIPLET
+
+      - name: Verify binaries
+        shell: pwsh
+        run: ./scripts/verify-dist.ps1
+
+      - name: Determine version
+        id: version
+        shell: pwsh
+        run: |
+          $cargo = (Select-String -Path Cargo.toml -Pattern '^version = "(.+)"' | Select-Object -First 1).Matches[0].Groups[1].Value
+          if ("${{ github.ref_type }}" -eq "tag") { $v = "${{ github.ref_name }}".TrimStart("v") } else { $v = "$cargo-dev.${{ github.run_number }}" }
+          $parts = @(($v -replace '[-+].*$', '').Split('.'))
+          while ($parts.Count -lt 4) { $parts += '0' }
+          "version=$v" >> $env:GITHUB_OUTPUT
+          "numeric=$($parts[0..3] -join '.')" >> $env:GITHUB_OUTPUT
+
+      - name: Install Inno Setup
+        run: choco upgrade innosetup -y --no-progress
+
+      - name: Build installer
+        shell: pwsh
+        run: |
+          $iscc = "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe"
+          & $iscc /Qp "/DAppVersion=${{ steps.version.outputs.version }}" "/DAppVersionNumeric=${{ steps.version.outputs.numeric }}" "/DDistDir=$PWD\dist" installer\heic-explorer-preview.iss
+          if ($LASTEXITCODE -ne 0) { throw "ISCC failed" }
+
+      - name: Installer smoke test (silent install, COM activation, uninstall + restore)
+        shell: pwsh
+        run: ./scripts/installer-smoke-test.ps1 -Setup dist\installer\HEICExplorerPreview-Setup.exe -Probe target\release\thumbnail-probe.exe
+
+      - name: Upload installer
+        uses: actions/upload-artifact@v4
+        with:
+          name: HEICExplorerPreview-Setup-${{ steps.version.outputs.version }}
+          path: dist/installer/HEICExplorerPreview-Setup.exe
+          if-no-files-found: error
+
+      # LGPL: publish the exact sources (upstream tarballs + vcpkg port patches) with each release.
+      - name: Collect third-party sources
+        if: github.ref_type == 'tag'
+        shell: pwsh
+        run: |
+          $root = "${{ steps.vcpkg.outputs.root }}"
+          $out = New-Item -ItemType Directory -Force dist\third-party-sources
+          $repos = @{ libheif = "strukturag/libheif"; libde265 = "strukturag/libde265" }
+          foreach ($o in (Get-Content vcpkg.json -Raw | ConvertFrom-Json).overrides) {
+            Invoke-WebRequest "https://github.com/$($repos[$o.name])/archive/refs/tags/v$($o.version).tar.gz" -OutFile "$out\$($o.name)-$($o.version).tar.gz"
+            Copy-Item -Recurse "$root\ports\$($o.name)" "$out\vcpkg-port-$($o.name)"
+          }
+          Copy-Item -Recurse triplets "$out\vcpkg-triplets"
+          Copy-Item vcpkg.json $out
+          Compress-Archive -Path "$out\*" -DestinationPath dist\third-party-sources.zip
+
+      - name: Upload third-party sources
+        if: github.ref_type == 'tag'
+        uses: actions/upload-artifact@v4
+        with:
+          name: third-party-sources
+          path: dist/third-party-sources.zip
+          if-no-files-found: error
+
+  release:
+    name: GitHub release
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          merge-multiple: true
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            artifacts/HEICExplorerPreview-Setup.exe
+            artifacts/third-party-sources.zip
+          generate_release_notes: true

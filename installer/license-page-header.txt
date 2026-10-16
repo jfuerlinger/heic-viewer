@@ -1,0 +1,30 @@
+HEIC Explorer Preview
+=====================
+
+DEUTSCH
+-------
+HEIC Explorer Preview steht unter der MIT-Lizenz (unten). Das Programm enthält
+libheif und libde265 als separate DLLs (heif.dll, libde265.dll). Diese stehen unter
+der GNU Lesser General Public License v3 (LGPL-3.0); der vollständige Lizenztext folgt
+weiter unten und wird zusätzlich im Ordner "licenses" installiert. Die DLLs dürfen durch
+eigene, kompatible Builds ersetzt werden; den Quellcode finden Sie unter den in
+THIRD-PARTY-LICENSES.txt genannten Adressen.
+
+HEVC-Hinweis: HEIC-Bilder sind mit HEVC (H.265) komprimiert, das in manchen Ländern
+patentrechtlich geschützt ist. Mit dieser Software wird keine Patentlizenz erteilt. Sie
+sind selbst dafür verantwortlich, ggf. erforderliche HEVC-Lizenzen zu beschaffen.
+
+ENGLISH
+-------
+HEIC Explorer Preview is licensed under the MIT License (below). It ships libheif and
+libde265 as separate DLLs (heif.dll, libde265.dll), licensed under the GNU Lesser
+General Public License v3 (LGPL-3.0); the full license text follows below and is also
+installed into the "licenses" folder. You may replace these DLLs with your own
+compatible builds; the source code is available at the locations listed in
+THIRD-PARTY-LICENSES.txt.
+
+HEVC notice: HEIC images are compressed with HEVC (H.265), which is covered by patents
+in some countries. No patent license is granted with this software. You are responsible
+for obtaining any HEVC license that may be required.
+
+

@@ -1,0 +1,27 @@
+[package]
+name = "heic-thumbnail"
+description = "Windows Explorer thumbnail provider (IThumbnailProvider) for HEIC/HEIF"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+rust-version.workspace = true
+
+[lib]
+# cdylib = the COM DLL; rlib so integration tests can drive the COM entry points in-process.
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+heic-decoder = { path = "../heic-decoder" }
+
+[target.'cfg(windows)'.dependencies]
+windows-core = "0.62"
+windows = { version = "0.62", features = [
+    "Win32_Foundation",
+    "Win32_Graphics_Gdi",
+    "Win32_System_Com",
+    "Win32_System_Diagnostics_Debug",
+    "Win32_System_LibraryLoader",
+    "Win32_UI_Shell",
+    "Win32_UI_Shell_PropertiesSystem",
+] }

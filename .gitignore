@@ -1,0 +1,9 @@
+/target/
+/dist/
+/vcpkg_installed/
+/vcpkg-binary-cache/
+*.pdb
+*.log
+.DS_Store
+.idea/
+.vscode/
