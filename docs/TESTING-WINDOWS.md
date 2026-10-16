@@ -160,6 +160,36 @@ thumbnail-probe.exe --shell C:\heic-test\IMG_0001.HEIC 256
   die per-user-Registrierung (HKCU) im Thumbnail-Hostprozess („Class not registered“). Im CI
   (elevated Runner) tritt genau das auf. Schlägt es auch nicht-elevated fehl, bitte melden.
 
+## 12. Kontextmenü: HEIC in JPEG umwandeln
+
+Unter Windows 11 jeweils über „Weitere Optionen anzeigen“ (oder Umschalt+Rechtsklick).
+
+- ☐ Rechtsklick auf **eine** HEIC-Datei → „In JPEG umwandeln“ vorhanden (mit Programmsymbol);
+  danach liegt `<Name>.jpg` daneben, das Original ist unverändert.
+- ☐ JPEG in der Fotos-App: aufrecht (Hochformat-Foto!), Farben wie das Original, volle Auflösung
+  (Eigenschaften → Details).
+- ☐ Eigenschaften → Details der JPEG: Aufnahmedatum, Kamera und GPS-Koordinaten vorhanden.
+- ☐ Änderungsdatum der JPEG = Änderungsdatum des Originals.
+- ☐ **Mehrfachauswahl** von ~30 HEIC-Dateien → Eintrag vorhanden → es erscheint **ein**
+  Fortschrittsfenster (nicht 30), alle 30 JPEGs entstehen.
+- ☐ Gemischte Auswahl (HEIC + JPG): Konvertierung läuft, JPGs werden als „übersprungen“ gelistet.
+- ☐ Rechtsklick **auf einen Ordner** → „Alle HEIC-Dateien in JPEG umwandeln“ → alle HEICs darin
+  (nicht in Unterordnern) werden umgewandelt.
+- ☐ Rechtsklick in den **leeren Bereich** eines geöffneten Ordners → gleicher Eintrag, gleiche Wirkung.
+- ☐ Ordner ohne HEIC-Dateien → Meldung „Keine HEIC-Dateien gefunden“.
+- ☐ Erneut umwandeln → es entstehen `<Name> (1).jpg`, nichts wird überschrieben.
+- ☐ Ordner mit ≥ 200 Fotos: Fortschrittsbalken läuft, PC bleibt bedienbar; **Abbrechen** →
+  Fenster zeigt „Wird abgebrochen …“, danach Zusammenfassung; keine halben/0-Byte-JPEGs und
+  keine `*.tmp`-Dateien im Ordner.
+- ☐ `corrupt_truncated.heic` in der Auswahl → Zusammenfassung „1 fehlgeschlagen“, Details
+  aufklappbar mit Dateiname und Grund.
+- ☐ Texte auf Deutsch (bei deutscher Installation).
+- ☐ Installation mit abgewählter Komponente „Kontextmenü“ → keine Einträge; Neuinstallation mit
+  Komponente → Einträge da; Abwahl bei erneuter Installation → Einträge wieder weg.
+- ☐ Nach Deinstallation: keine Kontextmenü-Einträge mehr.
+- ☐ Kommandozeile: `start /wait "" "%LocalAppData%\Programs\HEIC Explorer Preview\heic-convert.exe" --quiet C:\heic-test`
+  → `echo %ERRORLEVEL%` ist 1 (wegen der kaputten Testdatei), sonst 0.
+
 ## Ergebnis
 
 | Bereich | Ergebnis | Notizen |
@@ -174,5 +204,6 @@ thumbnail-probe.exe --shell C:\heic-test\IMG_0001.HEIC 256
 | 8 Deinstallation/Restore | | |
 | 9 Silent | | |
 | 10 Alle Benutzer | | |
+| 12 Kontextmenü JPEG | | |
 
 Windows-Version (`winver`): ______ · Installer-Version: ______ · Datum: ______

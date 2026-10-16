@@ -21,8 +21,33 @@ Vorschaubilder in der Explorer-Ansicht erzeugt:
 - Schutz vor defekten oder riesigen Dateien: Limit 100 Megapixel, 20 s Timeout, Fehler
   führen nur zu einem fehlenden Vorschaubild, nie zu einem Absturz des Explorers
 
-Nicht enthalten (v1): Vorschaufenster (Alt+P), AVIF, Bildserien/Live Photos (nur das
+Nicht enthalten: Vorschaufenster (Alt+P), AVIF, Bildserien/Live Photos (nur das
 Hauptbild wird verwendet), Gain-Maps/Tiefenkarten.
+
+### HEIC in JPEG umwandeln (Kontextmenü)
+
+- Rechtsklick auf eine oder mehrere HEIC-Dateien → **„In JPEG umwandeln“**
+- Rechtsklick auf einen Ordner oder in den leeren Bereich eines Ordners →
+  **„Alle HEIC-Dateien in JPEG umwandeln“** (nur dieser Ordner, ohne Unterordner)
+- Unter **Windows 11** stehen die Einträge unter **„Weitere Optionen anzeigen“**
+  (oder Umschalt+Rechtsklick).
+
+Die JPEGs landen neben den Originalen (`IMG_0001.HEIC` → `IMG_0001.jpg`). Existiert die Datei
+schon, entsteht `IMG_0001 (1).jpg`, es wird nie etwas überschrieben. Die Originale bleiben
+erhalten. Volle Auflösung, Qualität 92, richtig gedreht, Farben in sRGB, Transparenz wird
+weiß. EXIF (Aufnahmedatum, Kamera, **auch GPS-Ort**) und das Dateidatum werden übernommen.
+Ein Fenster zeigt den Fortschritt, „Abbrechen“ stoppt nach den gerade laufenden Dateien;
+am Ende kommt eine Zusammenfassung mit allen Fehlern.
+
+Kommandozeile (z. B. für Skripte):
+
+```bat
+"%LocalAppData%\Programs\HEIC Explorer Preview\heic-convert.exe" --quiet C:\Fotos C:\andere\bild.heic
+```
+
+`--quiet` gibt eine Zeile pro Datei aus; Exit-Code 0 = ok, 1 = mindestens ein Fehler.
+Da es ein Fensterprogramm ist, wartet `cmd` nicht von selbst: `start /wait "" heic-convert.exe --quiet …`
+bzw. in PowerShell `Start-Process … -Wait -PassThru`.
 
 ### Installation
 
@@ -35,6 +60,8 @@ Hauptbild wird verwendet), Gain-Maps/Tiefenkarten.
    - **Für alle Benutzer** (fragt nach Administratorrechten, Registrierung unter `HKLM`)
 4. Lizenz bestätigen, installieren. Explorer-Fenster ggf. neu öffnen.
 
+Die Kontextmenü-Einträge sind eine abwählbare Komponente (Standard: an).
+
 Ist bereits ein anderer Thumbnail-Handler für diese Endungen registriert (z. B. von der
 Microsoft „HEIF-Bilderweiterungen“), wird er überschrieben. Der alte Eintrag wird gesichert
 und bei der Deinstallation wiederhergestellt.
@@ -44,6 +71,7 @@ und bei der Deinstallation wiederhergestellt.
 ```bat
 HEICExplorerPreview-Setup.exe /VERYSILENT /SUPPRESSMSGBOXES /NORESTART /CURRENTUSER
 HEICExplorerPreview-Setup.exe /VERYSILENT /SUPPRESSMSGBOXES /NORESTART /ALLUSERS   (aus einer Admin-Konsole)
+HEICExplorerPreview-Setup.exe /VERYSILENT /SUPPRESSMSGBOXES /NORESTART /CURRENTUSER /COMPONENTS="main"   (ohne Kontextmenü)
 ```
 
 Updates: Es gibt keine automatischen Updates. Neue Version = neuen Installer ausführen, die
@@ -105,8 +133,24 @@ An Explorer extension (thumbnail handler) that renders thumbnails for HEIC/HEIF 
 - hardened against broken/huge files: 100 megapixel limit, 20 s timeout; failures only mean
   "no thumbnail", never an Explorer crash
 
-Not in v1: preview pane (Alt+P), AVIF, bursts/Live Photos (primary image only), gain maps,
-depth maps.
+Not included: preview pane (Alt+P), AVIF, bursts/Live Photos (primary image only), gain
+maps, depth maps.
+
+### Convert HEIC to JPEG (context menu)
+
+- Right-click one or more HEIC files → **"Convert to JPEG"**
+- Right-click a folder or the empty area inside a folder → **"Convert all HEIC files to JPEG"**
+  (that folder only, no subfolders)
+- On **Windows 11** the entries are under **"Show more options"** (or Shift+right-click).
+
+JPEGs are written next to the originals (`IMG_0001.HEIC` → `IMG_0001.jpg`); existing files are
+never overwritten (`IMG_0001 (1).jpg` instead) and originals are kept. Full resolution, quality
+92, upright, sRGB, transparency on white. Exif (date, camera, **including GPS location**) and
+the file date are preserved. A window shows progress, "Cancel" stops after the files in
+progress, and a summary lists all errors.
+
+Command line: `heic-convert.exe --quiet <files or folders>` (one line per file, exit code
+0 = ok, 1 = failures; use `start /wait` or `Start-Process -Wait`, it is a GUI-subsystem program).
 
 ### Installation
 
@@ -116,6 +160,9 @@ depth maps.
 3. Choose **"Install for me only"** (default, no admin, `HKCU`) or **"Install for all users"**
    (asks for admin rights, `HKLM`).
 4. Accept the license and install. Reopen Explorer windows if needed.
+
+The context menu entries are an optional component (on by default; silent install without them:
+`/COMPONENTS="main"`).
 
 If another thumbnail handler is already registered for these extensions (e.g. Microsoft's
 "HEIF Image Extensions"), it is overridden; the previous entry is backed up and restored on
@@ -171,6 +218,8 @@ install folder until the next install or until you sign out and delete it.
 crates/heic-decoder     platform-independent core: bytes in -> 8-bit sRGB RGBA out
                         (libheif FFI, thumbnail selection, scaling, ICC/nclx -> sRGB, limits, timeout)
 crates/heic-thumbnail   Windows COM DLL (IThumbnailProvider + IInitializeWithStream), cdylib
+crates/heic-convert     HEIC -> JPEG converter (library + heic-convert.exe: context menu and CLI;
+                        single instance via named mutex/pipe, TaskDialog progress)
 crates/thumbnail-probe  Windows diagnostic tool: fetch a thumbnail via COM or via the shell
 installer/              Inno Setup script (German + English)
 scripts/                CI helpers: stage dist, verify DLLs, installer smoke test

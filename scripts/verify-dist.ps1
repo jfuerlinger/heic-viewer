@@ -16,12 +16,19 @@ $regular = ($deps -split "delay load dependencies")[0]
 if ($regular -match "heif\.dll") { Fail "heif.dll is a regular (non-delay-loaded) import" }
 if ($deps -notmatch "heif\.dll") { Fail "heif.dll is not imported at all" }
 
-foreach ($dll in Get-ChildItem "$dist\*.dll") {
+foreach ($dll in @(Get-ChildItem "$dist\*.dll") + @(Get-ChildItem "$dist\*.exe")) {
     $d = dumpbin /nologo /dependents $dll.FullName | Out-String
     if ($d -match "(?i)(vcruntime|msvcp)\d+") { Fail "$($dll.Name) depends on the VC++ runtime ($($Matches[0])); expected static CRT" }
     $h = dumpbin /nologo /headers $dll.FullName | Out-String
     if ($h -notmatch "8664 machine \(x64\)") { Fail "$($dll.Name) is not an x64 image" }
 }
+
+# heic-convert.exe imports heif.dll normally; Windows finds it in the exe's own (application) folder.
+$convertDeps = dumpbin /nologo /dependents "$dist\heic-convert.exe" | Out-String
+if ($convertDeps -notmatch "heif\.dll") { Fail "heic-convert.exe does not import heif.dll" }
+# TaskDialogIndirect needs Common Controls v6 via the embedded manifest.
+$exeText = [System.Text.Encoding]::ASCII.GetString([System.IO.File]::ReadAllBytes("$dist\heic-convert.exe"))
+if ($exeText -notmatch "Microsoft\.Windows\.Common-Controls") { Fail "heic-convert.exe has no Common Controls v6 manifest" }
 
 $heifDeps = dumpbin /nologo /dependents "$dist\heif.dll" | Out-String
 if ($heifDeps -notmatch "libde265\.dll") { Fail "heif.dll does not depend on libde265.dll (HEVC decoder missing?)" }

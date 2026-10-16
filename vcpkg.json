@@ -1,6 +1,6 @@
 {
   "name": "heic-viewer",
-  "version-string": "0.1.0",
+  "version-string": "0.2.0",
   "description": "Native dependencies of HEIC Explorer Preview. libheif without default features = HEVC decoding via libde265 only (no GPL x265 encoder).",
   "dependencies": [
     {

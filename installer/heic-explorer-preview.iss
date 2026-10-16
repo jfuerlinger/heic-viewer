@@ -1,17 +1,17 @@
 ﻿; HEIC Explorer Preview - Inno Setup script (requires Inno Setup 6.3 or newer)
 ;
 ; Build (from the repository root, after scripts\stage-dist.ps1):
-;   iscc /DAppVersion=0.1.0 /DAppVersionNumeric=0.1.0.0 /DDistDir=..\dist installer\heic-explorer-preview.iss
+;   iscc /DAppVersion=0.2.0 /DAppVersionNumeric=0.2.0.0 /DDistDir=..\dist installer\heic-explorer-preview.iss
 ;
 ; Silent install:   HEICExplorerPreview-Setup.exe /VERYSILENT /SUPPRESSMSGBOXES /NORESTART [/CURRENTUSER | /ALLUSERS]
 ; Silent uninstall: unins000.exe /VERYSILENT /SUPPRESSMSGBOXES /NORESTART
 
 #define AppName "HEIC Explorer Preview"
 #ifndef AppVersion
-  #define AppVersion "0.1.0"
+  #define AppVersion "0.2.0"
 #endif
 #ifndef AppVersionNumeric
-  #define AppVersionNumeric "0.1.0.0"
+  #define AppVersionNumeric "0.2.0.0"
 #endif
 #ifndef DistDir
   #define DistDir "..\dist"
@@ -22,6 +22,9 @@
 ; Shell extension key for IThumbnailProvider handlers.
 #define ThumbnailHandler "{e357fccd-a995-4576-b01f-234630154e96}"
 #define ProductKey "Software\HEIC Explorer Preview"
+; Context menu verb key name (same for files, folders and folder backgrounds).
+#define Verb "HEICExplorerPreview.ToJpeg"
+#define ConvertExe "{app}\heic-convert.exe"
 ; Same GUIDs with "{" escaped as "{{" for sections where Inno expands {constants}.
 #define ClsIdEsc "{" + ClsId
 #define ThumbnailHandlerEsc "{" + ThumbnailHandler
@@ -61,8 +64,27 @@ UninstallDisplayName={#AppName}
 Name: "en"; MessagesFile: "compiler:Default.isl"
 Name: "de"; MessagesFile: "compiler:Languages\German.isl"
 
+[CustomMessages]
+en.ComponentThumbnails=Thumbnails for HEIC/HEIF photos in Explorer
+de.ComponentThumbnails=Vorschaubilder für HEIC/HEIF-Fotos im Explorer
+en.ComponentContextMenu=Context menu: convert HEIC to JPEG
+de.ComponentContextMenu=Kontextmenü: HEIC in JPEG umwandeln
+en.VerbFiles=Convert to JPEG
+de.VerbFiles=In JPEG umwandeln
+en.VerbFolder=Convert all HEIC files to JPEG
+de.VerbFolder=Alle HEIC-Dateien in JPEG umwandeln
+
+[Types]
+Name: "full"; Description: "{cm:FullInstallation}"
+Name: "custom"; Description: "{cm:CustomInstallation}"; Flags: iscustom
+
+[Components]
+Name: "main"; Description: "{cm:ComponentThumbnails}"; Types: full custom; Flags: fixed
+Name: "contextmenu"; Description: "{cm:ComponentContextMenu}"; Types: full
+
 [Files]
 Source: "{#DistDir}\heic_thumbnail.dll"; DestDir: "{app}"; Flags: ignoreversion
+Source: "{#DistDir}\heic-convert.exe"; DestDir: "{app}"; Flags: ignoreversion
 Source: "{#DistDir}\heif.dll"; DestDir: "{app}"; Flags: ignoreversion
 Source: "{#DistDir}\libde265.dll"; DestDir: "{app}"; Flags: ignoreversion
 Source: "{#DistDir}\LICENSE.txt"; DestDir: "{app}"; Flags: ignoreversion
@@ -79,6 +101,29 @@ Root: HKA; Subkey: "Software\Classes\CLSID\{#ClsIdEsc}\InprocServer32"; ValueTyp
 Root: HKA; Subkey: "Software\Classes\.heic\ShellEx\{#ThumbnailHandlerEsc}"; ValueType: string; ValueName: ""; ValueData: "{#ClsIdEsc}"
 Root: HKA; Subkey: "Software\Classes\.heif\ShellEx\{#ThumbnailHandlerEsc}"; ValueType: string; ValueName: ""; ValueData: "{#ClsIdEsc}"
 Root: HKA; Subkey: "Software\Classes\.hif\ShellEx\{#ThumbnailHandlerEsc}"; ValueType: string; ValueName: ""; ValueData: "{#ClsIdEsc}"
+
+; Context menu (classic verbs; on Windows 11 under "Show more options").
+; Files: one process per selected file; heic-convert.exe merges them into one window.
+; MultiSelectModel=Player lifts Explorer's default limit of 15 selected items.
+Root: HKA; Subkey: "Software\Classes\SystemFileAssociations\.heic\shell\{#Verb}"; ValueType: string; ValueName: "MUIVerb"; ValueData: "{cm:VerbFiles}"; Components: contextmenu; Flags: uninsdeletekey
+Root: HKA; Subkey: "Software\Classes\SystemFileAssociations\.heic\shell\{#Verb}"; ValueType: string; ValueName: "Icon"; ValueData: "{#ConvertExe}"; Components: contextmenu
+Root: HKA; Subkey: "Software\Classes\SystemFileAssociations\.heic\shell\{#Verb}"; ValueType: string; ValueName: "MultiSelectModel"; ValueData: "Player"; Components: contextmenu
+Root: HKA; Subkey: "Software\Classes\SystemFileAssociations\.heic\shell\{#Verb}\command"; ValueType: string; ValueName: ""; ValueData: """{#ConvertExe}"" --lang={language} ""%1"""; Components: contextmenu
+Root: HKA; Subkey: "Software\Classes\SystemFileAssociations\.heif\shell\{#Verb}"; ValueType: string; ValueName: "MUIVerb"; ValueData: "{cm:VerbFiles}"; Components: contextmenu; Flags: uninsdeletekey
+Root: HKA; Subkey: "Software\Classes\SystemFileAssociations\.heif\shell\{#Verb}"; ValueType: string; ValueName: "Icon"; ValueData: "{#ConvertExe}"; Components: contextmenu
+Root: HKA; Subkey: "Software\Classes\SystemFileAssociations\.heif\shell\{#Verb}"; ValueType: string; ValueName: "MultiSelectModel"; ValueData: "Player"; Components: contextmenu
+Root: HKA; Subkey: "Software\Classes\SystemFileAssociations\.heif\shell\{#Verb}\command"; ValueType: string; ValueName: ""; ValueData: """{#ConvertExe}"" --lang={language} ""%1"""; Components: contextmenu
+Root: HKA; Subkey: "Software\Classes\SystemFileAssociations\.hif\shell\{#Verb}"; ValueType: string; ValueName: "MUIVerb"; ValueData: "{cm:VerbFiles}"; Components: contextmenu; Flags: uninsdeletekey
+Root: HKA; Subkey: "Software\Classes\SystemFileAssociations\.hif\shell\{#Verb}"; ValueType: string; ValueName: "Icon"; ValueData: "{#ConvertExe}"; Components: contextmenu
+Root: HKA; Subkey: "Software\Classes\SystemFileAssociations\.hif\shell\{#Verb}"; ValueType: string; ValueName: "MultiSelectModel"; ValueData: "Player"; Components: contextmenu
+Root: HKA; Subkey: "Software\Classes\SystemFileAssociations\.hif\shell\{#Verb}\command"; ValueType: string; ValueName: ""; ValueData: """{#ConvertExe}"" --lang={language} ""%1"""; Components: contextmenu
+; Right-click on a folder, and on the empty area inside an open folder.
+Root: HKA; Subkey: "Software\Classes\Directory\shell\{#Verb}"; ValueType: string; ValueName: "MUIVerb"; ValueData: "{cm:VerbFolder}"; Components: contextmenu; Flags: uninsdeletekey
+Root: HKA; Subkey: "Software\Classes\Directory\shell\{#Verb}"; ValueType: string; ValueName: "Icon"; ValueData: "{#ConvertExe}"; Components: contextmenu
+Root: HKA; Subkey: "Software\Classes\Directory\shell\{#Verb}\command"; ValueType: string; ValueName: ""; ValueData: """{#ConvertExe}"" --lang={language} ""%1"""; Components: contextmenu
+Root: HKA; Subkey: "Software\Classes\Directory\Background\shell\{#Verb}"; ValueType: string; ValueName: "MUIVerb"; ValueData: "{cm:VerbFolder}"; Components: contextmenu; Flags: uninsdeletekey
+Root: HKA; Subkey: "Software\Classes\Directory\Background\shell\{#Verb}"; ValueType: string; ValueName: "Icon"; ValueData: "{#ConvertExe}"; Components: contextmenu
+Root: HKA; Subkey: "Software\Classes\Directory\Background\shell\{#Verb}\command"; ValueType: string; ValueName: ""; ValueData: """{#ConvertExe}"" --lang={language} ""%V"""; Components: contextmenu
 
 [UninstallDelete]
 Type: files; Name: "{app}\*.old"
@@ -162,9 +207,20 @@ begin
     Log('Could not move aside ' + FileName);
 end;
 
+{ Removes the context menu verbs, e.g. when the component was deselected on re-install. }
+procedure RemoveContextMenu();
+begin
+  RegDeleteKeyIncludingSubkeys(HKA, 'Software\Classes\SystemFileAssociations\.heic\shell\{#Verb}');
+  RegDeleteKeyIncludingSubkeys(HKA, 'Software\Classes\SystemFileAssociations\.heif\shell\{#Verb}');
+  RegDeleteKeyIncludingSubkeys(HKA, 'Software\Classes\SystemFileAssociations\.hif\shell\{#Verb}');
+  RegDeleteKeyIncludingSubkeys(HKA, 'Software\Classes\Directory\shell\{#Verb}');
+  RegDeleteKeyIncludingSubkeys(HKA, 'Software\Classes\Directory\Background\shell\{#Verb}');
+end;
+
 procedure MoveAsideBinaries(const Dir: String);
 begin
   DeleteStaleFiles(Dir);
+  MoveAside(Dir + '\heic-convert.exe');
   MoveAside(Dir + '\heic_thumbnail.dll');
   MoveAside(Dir + '\heif.dll');
   MoveAside(Dir + '\libde265.dll');
@@ -179,6 +235,8 @@ begin
     BackupHandler('.hif');
     MoveAsideBinaries(ExpandConstant('{app}'));
   end;
+  if (CurStep = ssPostInstall) and not WizardIsComponentSelected('contextmenu') then
+    RemoveContextMenu();
 end;
 
 procedure CurUninstallStepChanged(CurUninstallStep: TUninstallStep);

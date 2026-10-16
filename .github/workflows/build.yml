@@ -141,7 +141,7 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw "cargo test" }
 
       - name: Build release binaries
-        run: cargo build --release -p heic-thumbnail -p thumbnail-probe
+        run: cargo build --release -p heic-thumbnail -p heic-convert -p thumbnail-probe
 
       - name: Set up MSVC developer shell (dumpbin)
         uses: ilammy/msvc-dev-cmd@v1

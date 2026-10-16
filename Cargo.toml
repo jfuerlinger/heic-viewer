@@ -1,9 +1,9 @@
 [workspace]
 resolver = "2"
-members = ["crates/heic-decoder", "crates/heic-thumbnail", "crates/thumbnail-probe"]
+members = ["crates/heic-decoder", "crates/heic-thumbnail", "crates/heic-convert", "crates/thumbnail-probe"]
 
 [workspace.package]
-version = "0.1.0"
+version = "0.2.0"
 edition = "2021"
 license = "MIT"
 authors = ["Josef Fürlinger"]

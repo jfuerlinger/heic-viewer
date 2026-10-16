@@ -186,3 +186,10 @@ fn threaded_decode_with_timeout() {
     let d = decode_thumbnail_with_timeout(data, 256, Limits::default()).unwrap();
     assert_eq!((d.image.width, d.image.height), (256, 192));
 }
+
+#[test]
+fn exif_is_extracted_as_tiff() {
+    let exif = heic_decoder::read_exif(&fixture("quadrants_orientation6.heic"), &Limits::default()).unwrap().unwrap();
+    assert!(exif.starts_with(b"MM\0*") || exif.starts_with(b"II*\0"), "{:?}", &exif[..8]);
+    assert_eq!(heic_decoder::read_exif(&fixture("quadrants_srgb.heic"), &Limits::default()).unwrap(), None);
+}

@@ -22,6 +22,7 @@ if ($unexpected -or $missing) {
 }
 
 Copy-Item (Join-Path $root "target\$BuildProfile\heic_thumbnail.dll") $dist
+Copy-Item (Join-Path $root "target\$BuildProfile\heic-convert.exe") $dist
 foreach ($dll in $expected) { Copy-Item "$vcpkgDir\bin\$dll" $dist }
 
 Copy-Item (Join-Path $root "LICENSE") "$dist\LICENSE.txt"

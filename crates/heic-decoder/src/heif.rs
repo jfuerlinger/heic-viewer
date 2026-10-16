@@ -19,7 +19,7 @@ fn check(err: ffi::heif_error) -> Result<(), DecodeError> {
         String::new()
     } else {
         // SAFETY: libheif guarantees a valid NUL-terminated string for the error message.
-        unsafe { CStr::from_ptr(err.message) }.to_string_lossy().into_owned()
+        unsafe { CStr::from_ptr(err.message) }.to_string_lossy().trim().to_string()
     };
     Err(DecodeError::Heif { code: err.code, subcode: err.subcode, message })
 }
@@ -127,6 +127,30 @@ impl<'a> Handle<'a> {
                     Handle::from_raw(out).ok()
                 })
                 .collect()
+        }
+    }
+
+    /// Raw TIFF structure of the first Exif block (the HEIF-specific offset prefix is stripped).
+    pub fn exif(&self) -> Option<Vec<u8>> {
+        const MAX_EXIF: usize = 4 * 1024 * 1024;
+        unsafe {
+            let filter = c"Exif".as_ptr();
+            if ffi::heif_image_handle_get_number_of_metadata_blocks(self.raw(), filter) <= 0 {
+                return None;
+            }
+            let mut id = 0;
+            if ffi::heif_image_handle_get_list_of_metadata_block_IDs(self.raw(), filter, &mut id, 1) != 1 {
+                return None;
+            }
+            let size = ffi::heif_image_handle_get_metadata_size(self.raw(), id);
+            if !(4..=MAX_EXIF).contains(&size) {
+                return None;
+            }
+            let mut raw = vec![0u8; size];
+            check(ffi::heif_image_handle_get_metadata(self.raw(), id, raw.as_mut_ptr() as *mut c_void)).ok()?;
+            let offset = u32::from_be_bytes([raw[0], raw[1], raw[2], raw[3]]) as usize;
+            let tiff = raw.get(4usize.checked_add(offset)?..)?;
+            (tiff.len() >= 8).then(|| tiff.to_vec())
         }
     }
 

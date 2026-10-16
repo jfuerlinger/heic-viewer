@@ -81,6 +81,20 @@ pub fn decode_image(data: &[u8], limits: &Limits) -> Result<Decoded, DecodeError
     guarded(|| decode_impl(data, 0, limits, None))
 }
 
+/// Exif metadata of the primary image as a raw TIFF structure ("II*\0"/"MM\0*" header),
+/// ready to be wrapped into a JPEG APP1 segment. `Ok(None)` if the file has no Exif block.
+pub fn read_exif(data: &[u8], limits: &Limits) -> Result<Option<Vec<u8>>, DecodeError> {
+    guarded(|| {
+        if data.is_empty() || data.len() > limits.max_input_bytes {
+            return Err(DecodeError::InputSize(data.len()));
+        }
+        heif::init();
+        let ctx = heif::Context::read(data, (limits.max_pixels as f64).sqrt().ceil() as u32)?;
+        let exif = ctx.primary_image()?.exif();
+        Ok(exif)
+    })
+}
+
 static ACTIVE_WORKERS: AtomicUsize = AtomicUsize::new(0);
 
 /// Number of decode worker threads still running (also ones that already timed out).

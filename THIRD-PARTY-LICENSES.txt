@@ -34,13 +34,17 @@ available at the URLs above; each GitHub release of HEIC Explorer Preview additi
 attaches the exact source archives and vcpkg port files used for that build.
 
 
-2. Rust crates statically linked into heic_thumbnail.dll
---------------------------------------------------------
+2. Rust crates statically linked into heic_thumbnail.dll and heic-convert.exe
+-----------------------------------------------------------------------------
 
 moxcms 0.9.1        BSD-3-Clause (elected from "BSD-3-Clause OR Apache-2.0")
                     Copyright (c) Radzivon Bartoshyk      -> licenses/moxcms-LICENSE.txt
 pxfm 0.1.30         BSD-3-Clause (elected from "BSD-3-Clause OR Apache-2.0")
                     Copyright (c) Radzivon Bartoshyk      -> licenses/pxfm-LICENSE.txt
+jpeg-encoder 0.7.1  MIT (elected from "MIT OR Apache-2.0") AND IJG
+                    Copyright (c) 2021 Volker Ströbel      -> licenses/jpeg-encoder-LICENSE-MIT.txt
+                    This software is based in part on the work of the Independent JPEG Group.
+                                                           -> licenses/jpeg-encoder-LICENSE-IJG.txt
 num-traits 0.2.19   MIT (elected from "MIT OR Apache-2.0")
                     Copyright (c) 2014 The Rust Project Developers -> licenses/num-traits-LICENSE-MIT.txt
 windows, windows-core, windows-result, windows-strings, windows-link,

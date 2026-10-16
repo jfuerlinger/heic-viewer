@@ -136,6 +136,23 @@ extern "C" {
     ) -> heif_error;
     pub fn heif_nclx_color_profile_free(profile: *mut heif_color_profile_nclx);
 
+    pub fn heif_image_handle_get_number_of_metadata_blocks(
+        handle: *const heif_image_handle,
+        type_filter: *const c_char,
+    ) -> c_int;
+    pub fn heif_image_handle_get_list_of_metadata_block_IDs(
+        handle: *const heif_image_handle,
+        type_filter: *const c_char,
+        ids: *mut heif_item_id,
+        count: c_int,
+    ) -> c_int;
+    pub fn heif_image_handle_get_metadata_size(handle: *const heif_image_handle, metadata_id: heif_item_id) -> usize;
+    pub fn heif_image_handle_get_metadata(
+        handle: *const heif_image_handle,
+        metadata_id: heif_item_id,
+        out_data: *mut c_void,
+    ) -> heif_error;
+
     pub fn heif_decoding_options_alloc() -> *mut heif_decoding_options_v6;
     pub fn heif_decoding_options_free(options: *mut heif_decoding_options_v6);
     pub fn heif_decode_image(
