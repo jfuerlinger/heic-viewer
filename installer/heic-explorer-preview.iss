@@ -73,10 +73,14 @@ en.VerbFiles=Convert to JPEG
 de.VerbFiles=In JPEG umwandeln
 en.VerbFolder=Convert all HEIC files to JPEG
 de.VerbFolder=Alle HEIC-Dateien in JPEG umwandeln
+en.TypeFull=Full installation
+de.TypeFull=Vollständige Installation
+en.TypeCustom=Custom installation
+de.TypeCustom=Benutzerdefinierte Installation
 
 [Types]
-Name: "full"; Description: "{cm:FullInstallation}"
-Name: "custom"; Description: "{cm:CustomInstallation}"; Flags: iscustom
+Name: "full"; Description: "{cm:TypeFull}"
+Name: "custom"; Description: "{cm:TypeCustom}"; Flags: iscustom
 
 [Components]
 Name: "main"; Description: "{cm:ComponentThumbnails}"; Types: full custom; Flags: fixed
