@@ -46,8 +46,11 @@ $out = & $Probe $Fixture 256 2>&1 | Out-String
 Write-Host $out
 Check ($LASTEXITCODE -eq 0 -and $out -match "^64x96") "probe produced a 64x96 thumbnail"
 
-Write-Host "== shell thumbnail (informational)"
+# Informational only: CI runners are elevated, and COM ignores per-user (HKCU) registrations
+# for the shell's out-of-process thumbnail host when the caller is elevated.
+Write-Host "== shell thumbnail (informational, may fail on elevated CI runners)"
 & $Probe --shell $Fixture 256 2>&1 | Write-Host
+Write-Host "shell probe exit code: $LASTEXITCODE (ignored)"
 
 Write-Host "== uninstall"
 $appDir = Split-Path -Parent $dllPath
@@ -70,3 +73,5 @@ Check ($left.Count -eq 0) "install directory empty (except locked *.old files)"
 Remove-Item -Path "$classes\.heif\ShellEx\$handler" -Force -ErrorAction SilentlyContinue
 if ($failed) { Get-Content $log -ErrorAction SilentlyContinue | Select-Object -Last 60; exit 1 }
 Write-Host "installer smoke test passed"
+# Do not let the exit code of the last native command (e.g. the informational probe) leak.
+exit 0

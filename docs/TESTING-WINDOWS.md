@@ -155,7 +155,10 @@ thumbnail-probe.exe --shell C:\heic-test\IMG_0001.HEIC 256
 
 - ☐ Erste Zeile: `64x96 32bpp alpha=rgb center=#…` – beweist Registrierung + Laden von
   `heif.dll` aus dem Installationsordner.
-- ☐ `--shell` liefert ein Bild (Shell-Pfad wie im Explorer).
+- ☐ `--shell` liefert ein Bild (Shell-Pfad wie im Explorer). Wichtig: aus einer **normalen,
+  nicht als Administrator gestarteten** Konsole ausführen. Bei elevated Aufrufern ignoriert COM
+  die per-user-Registrierung (HKCU) im Thumbnail-Hostprozess („Class not registered“). Im CI
+  (elevated Runner) tritt genau das auf. Schlägt es auch nicht-elevated fehl, bitte melden.
 
 ## Ergebnis
 
